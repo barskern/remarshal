@@ -14,7 +14,7 @@ import os.path
 import re
 import string
 import sys
-import pytoml
+import tomlkit
 import umsgpack
 import yaml
 
@@ -101,6 +101,8 @@ else:
 
 def json_default(obj):
     if isinstance(obj, datetime.datetime):
+        return obj.isoformat()
+    if isinstance(obj, datetime.date):
         return obj.isoformat()
     raise TypeError("{0} is not JSON-serializable".format(repr(obj)))
 
@@ -285,12 +287,8 @@ def decode_msgpack(input_data, ordered):
 
 def decode_toml(input_data, ordered):
     try:
-        pairs_hook = OrderedDict if ordered else dict
-        return pytoml.loads(
-            input_data,
-            object_pairs_hook=pairs_hook
-        )
-    except pytoml.core.TomlError as e:
+        return tomlkit.loads(input_data)
+    except tomlkit.exceptions.TOMLKitError as e:
         raise ValueError('Cannot parse as TOML ({0})'.format(e))
 
 
@@ -379,7 +377,7 @@ def encode_msgpack(data):
 
 def encode_toml(data, ordered):
     try:
-        return pytoml.dumps(data, sort_keys=not ordered)
+        return tomlkit.dumps(data)
     except AttributeError as e:
         if str(e) == "'list' object has no attribute 'keys'":
             raise ValueError(
